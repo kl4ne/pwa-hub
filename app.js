@@ -1,10 +1,11 @@
 const HUB_VERSION = '1.2.0';
+const HUB_URL = 'https://kl4ne.github.io/pwa-hub/';
 const VALID_THEMES = new Set(['blue', 'green', 'orange', 'pink']);
 const VALID_OPEN_MODES = new Set(['new', 'same']);
+let deferredInstallPrompt = null;
 
 function setupServiceWorker() {
   if (!('serviceWorker' in navigator)) return;
-
   let refreshing = false;
 
   navigator.serviceWorker.addEventListener('controllerchange', () => {
@@ -17,9 +18,7 @@ function setupServiceWorker() {
     try {
       const registration = await navigator.serviceWorker.register('./sw.js');
 
-      if (registration.waiting) {
-        showUpdateNotice(registration.waiting);
-      }
+      if (registration.waiting) showUpdateNotice(registration.waiting);
 
       registration.addEventListener('updatefound', () => {
         const worker = registration.installing;
@@ -62,67 +61,39 @@ function showUpdateNotice(worker) {
   document.body.appendChild(notice);
 }
 
-setupServiceWorker();
-
-// Avatar fallback stays outside inline HTML so the CSP can remain strict.
-const avatarImg = document.querySelector('.avatar');
-if (avatarImg) {
-  avatarImg.addEventListener('error', () => {
-    avatarImg.src = 'https://ui-avatars.com/api/?name=Roberto+Macfie&background=0284c7&color=fff&size=192';
-  }, { once: true });
-}
+const avatar = document.querySelector('.avatar');
+avatar?.addEventListener('error', () => {
+  avatar.src = 'https://ui-avatars.com/api/?name=Roberto+Macfie&background=108a9d&color=fff&size=192';
+}, { once: true });
 
 const svgIcons = {
   health: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/><path d="M12 5v14"/></svg>`,
-  council: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a4 4 0 0 1 4 4c0 1.95-1.4 3.58-3.25 3.93L13 14h-2l.25-4.07A4.002 4.002 0 0 1 12 2Z"/><circle cx="12" cy="18" r="2"/><path d="m4.93 19.07 2.83-2.83"/><path d="m16.24 16.24 2.83 2.83"/><path d="M2 12h4"/><path d="M18 12h4"/></svg>`,
-  code: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>`,
-  chart: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m7 16 4-5 4 3 5-7"/></svg>`,
-  notes: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>`,
-  default: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="m10 8 4 4-4 4"/></svg>`
+  council: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a4 4 0 0 1 4 4c0 1.95-1.4 3.58-3.25 3.93L13 14h-2l.25-4.07A4 4 0 0 1 12 2Z"/><circle cx="12" cy="18" r="2"/><path d="m4.93 19.07 2.83-2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4"/></svg>`,
+  code: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>`,
+  chart: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m7 16 4-5 4 3 5-7"/></svg>`,
+  notes: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M16 13H8M16 17H8"/></svg>`,
+  default: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="m10 8 4 4-4 4"/></svg>`
 };
 
 function getIcon(name) {
   return Object.prototype.hasOwnProperty.call(svgIcons, name) ? svgIcons[name] : svgIcons.default;
 }
 
-function getTheme(theme) {
-  return VALID_THEMES.has(theme) ? theme : 'blue';
+function getTheme(value) {
+  return VALID_THEMES.has(value) ? value : 'blue';
 }
 
-function getOpenMode(mode) {
-  return VALID_OPEN_MODES.has(mode) ? mode : 'new';
+function getOpenMode(value) {
+  return VALID_OPEN_MODES.has(value) ? value : 'new';
 }
 
-const container = document.getElementById('links-container');
-
-function isSafeUrl(url) {
+function isSafeUrl(value) {
   try {
-    const parsed = new URL(url, window.location.href);
-    if (parsed.protocol === 'https:') return true;
-
-    const localHosts = new Set(['localhost', '127.0.0.1', '[::1]']);
-    return parsed.protocol === 'http:' && localHosts.has(parsed.hostname);
+    const url = new URL(value, window.location.href);
+    if (url.protocol === 'https:') return true;
+    return url.protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname);
   } catch {
     return false;
-  }
-}
-
-function showEmptyState(message) {
-  if (!container) return;
-
-  container.replaceChildren();
-  const p = document.createElement('p');
-  p.className = 'empty-state';
-  p.textContent = message;
-  container.appendChild(p);
-}
-
-function domainLabel(value) {
-  try {
-    const url = new URL(value);
-    return url.hostname + url.pathname.replace(/\/$/, '');
-  } catch {
-    return 'External app';
   }
 }
 
@@ -134,56 +105,43 @@ function makeText(tag, className, text) {
 }
 
 function buildCard(item) {
-  if (!item || typeof item !== 'object' || !item.url || !isSafeUrl(item.url)) return null;
+  if (!item || typeof item !== 'object' || !isSafeUrl(item.url)) return null;
+
+  const title = typeof item.title === 'string' && item.title.trim() ? item.title.trim() : 'App';
+  const description = typeof item.description === 'string' ? item.description.trim() : '';
+  const openMode = getOpenMode(item.open);
 
   const card = document.createElement('a');
-  const openMode = getOpenMode(item.open);
-  card.href = new URL(item.url, window.location.href).href;
   card.className = `app-card card-${getTheme(item.theme)}`;
+  card.href = new URL(item.url, window.location.href).href;
 
   if (openMode === 'new') {
     card.target = '_blank';
     card.rel = 'noopener noreferrer';
   }
 
-  const top = document.createElement('div');
-  top.className = 'card-top';
+  const icon = document.createElement('div');
+  icon.className = 'card-icon';
+  icon.setAttribute('aria-hidden', 'true');
+  icon.innerHTML = getIcon(item.icon);
 
-  const iconWrapper = document.createElement('div');
-  iconWrapper.className = 'card-icon';
-  iconWrapper.setAttribute('aria-hidden', 'true');
-  iconWrapper.innerHTML = getIcon(item.icon);
-
-  const badges = document.createElement('div');
-  badges.className = 'card-badges';
-  badges.append(
-    makeText('span', 'card-status', typeof item.status === 'string' && item.status.trim() ? item.status.trim() : 'Live'),
-    makeText('span', 'card-mode', openMode === 'new' ? 'New tab' : 'Same tab')
-  );
-  top.append(iconWrapper, badges);
-
-  const body = document.createElement('div');
-  body.className = 'card-body';
-  const title = typeof item.title === 'string' && item.title.trim() ? item.title.trim() : 'App';
-  const description = typeof item.description === 'string' ? item.description.trim() : '';
-  body.append(
-    makeText('span', 'card-category', typeof item.category === 'string' && item.category.trim() ? item.category.trim() : 'App'),
+  const content = document.createElement('div');
+  content.className = 'card-content';
+  content.append(
     makeText('strong', 'card-title', title),
     makeText('span', 'card-desc', description)
   );
 
-  const footer = document.createElement('div');
-  footer.className = 'card-footer';
-  const launch = makeText('span', 'launch', '↗');
-  launch.setAttribute('aria-hidden', 'true');
-  footer.append(makeText('span', 'domain-pill', domainLabel(item.url)), launch);
+  const arrow = makeText('span', 'card-arrow', '›');
+  arrow.setAttribute('aria-hidden', 'true');
 
-  card.append(top, body, footer);
+  card.append(icon, content, arrow);
   card.setAttribute('aria-label', `${title}. ${description}${openMode === 'new' ? ' Opens in a new tab.' : ''}`);
   return card;
 }
 
 async function loadLinks() {
+  const container = document.getElementById('links-container');
   if (!container) return;
 
   try {
@@ -203,29 +161,19 @@ async function loadLinks() {
       rendered += 1;
     }
 
-    if (rendered === 0) {
-      showEmptyState('No applications published yet.');
-      const count = document.getElementById('app-count');
-      if (count) count.textContent = '0';
+    if (!rendered) {
+      container.replaceChildren(makeText('p', 'empty-state', 'No applications published yet.'));
       return;
     }
 
     container.replaceChildren(fragment);
-    const count = document.getElementById('app-count');
-    if (count) count.textContent = String(rendered);
   } catch (error) {
     console.error('Data error:', error);
-    showEmptyState('Applications will be available shortly.');
-    const count = document.getElementById('app-count');
-    if (count) count.textContent = '0';
+    container.replaceChildren(makeText('p', 'empty-state', 'Applications will be available shortly.'));
   }
 }
 
-
-const HUB_URL = 'https://kl4ne.github.io/pwa-hub/';
-let deferredInstallPrompt = null;
-
-function setupInstallAction() {
+function setupInstallButton() {
   const button = document.getElementById('install-button');
   if (!button) return;
 
@@ -249,14 +197,14 @@ function setupInstallAction() {
   });
 }
 
-function flashAction(button, message, normal) {
+function flashButton(button, message, normal) {
   const label = button?.querySelector('span:last-child');
   if (!label) return;
   label.textContent = message;
-  window.setTimeout(() => { label.textContent = normal; }, 1600);
+  window.setTimeout(() => { label.textContent = normal; }, 1500);
 }
 
-function setupShareActions() {
+function setupActions() {
   const share = document.getElementById('share-button');
   const copy = document.getElementById('copy-button');
 
@@ -265,12 +213,12 @@ function setupShareActions() {
       if (navigator.share) {
         await navigator.share({
           title: '@rmacfie • PWA Hub',
-          text: 'Open my personal hub of PWAs and digital tools.',
+          text: 'My Progressive Web Apps • Ready to Use',
           url: HUB_URL
         });
       } else {
         await navigator.clipboard.writeText(HUB_URL);
-        flashAction(share, 'Link Copied', 'Share');
+        flashButton(share, 'Copied', 'Share');
       }
     } catch (error) {
       console.warn('Share action failed:', error);
@@ -280,25 +228,16 @@ function setupShareActions() {
   copy?.addEventListener('click', async () => {
     try {
       await navigator.clipboard.writeText(HUB_URL);
-      flashAction(copy, 'Copied', 'Copy Link');
+      flashButton(copy, 'Copied', 'Copy');
     } catch (error) {
       console.warn('Copy action failed:', error);
     }
   });
 }
 
-function updateConnectionState() {
-  const state = document.getElementById('connection-state');
-  if (state) state.textContent = navigator.onLine ? 'Online' : 'Offline-ready';
-}
-
-window.addEventListener('online', updateConnectionState);
-window.addEventListener('offline', updateConnectionState);
-updateConnectionState();
-setupInstallAction();
-setupShareActions();
-
+setupServiceWorker();
+setupInstallButton();
+setupActions();
 loadLinks();
 
-// Kept in JS for troubleshooting without adding visible UI clutter.
 window.__PWA_HUB_VERSION__ = HUB_VERSION;
