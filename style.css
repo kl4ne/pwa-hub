@@ -319,3 +319,54 @@ body{
     scroll-behavior:auto!important
   }
 }
+
+
+.install-help{
+  position:fixed;
+  inset:0;
+  z-index:200;
+  display:flex;
+  align-items:flex-end;
+  justify-content:center;
+  padding:18px;
+  background:rgba(3,8,15,.62);
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px)
+}
+.install-help-panel{
+  width:min(100%,430px);
+  padding:18px;
+  border-radius:18px;
+  border:1px solid rgba(255,255,255,.14);
+  background:linear-gradient(180deg,rgba(20,31,45,.98),rgba(10,18,29,.99));
+  box-shadow:0 22px 54px rgba(0,0,0,.45);
+  text-align:left
+}
+.install-help-title{
+  display:block;
+  font-size:1rem;
+  margin-bottom:8px
+}
+.install-help-text{
+  color:#b8c4d4;
+  font-size:.82rem;
+  line-height:1.5
+}
+.install-help-close{
+  appearance:none;
+  width:100%;
+  min-height:40px;
+  margin-top:14px;
+  border:0;
+  border-radius:11px;
+  background:linear-gradient(135deg,#0ea5e9,#2563eb);
+  color:white;
+  font:inherit;
+  font-size:.78rem;
+  font-weight:800;
+  cursor:pointer
+}
+.install-help-close:focus-visible{
+  outline:3px solid #7dd3fc;
+  outline-offset:3px
+}
