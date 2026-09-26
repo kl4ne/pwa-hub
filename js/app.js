@@ -1,4 +1,4 @@
-const HUB_VERSION = '1.3.1';
+const HUB_VERSION = '1.4.0';
 const DEFAULT_HUB_URL = 'https://kl4ne.github.io/pwa-hub/';
 const VALID_THEMES = new Set(['blue','green','orange','pink']);
 const VALID_STATUS = new Set(['live','beta','coming-soon','maintenance']);
@@ -12,7 +12,7 @@ let hubConfig = {
   accent:'#42d7ff',
   accentSecondary:'#2dd4bf',
   hubUrl:DEFAULT_HUB_URL,
-  qrImage:'qr-hub.svg',
+  qrImage:'assets/qr/qr-hub.svg',
   localPrivateVisits:true,
   analyticsEndpoint:'',
   showStatus:true,
@@ -91,7 +91,7 @@ async function fetchJson(path, fallback) {
 }
 
 async function loadConfig() {
-  const data = await fetchJson('config.json', hubConfig);
+  const data = await fetchJson('data/config.json', hubConfig);
   if (data && typeof data === 'object' && !Array.isArray(data)) {
     hubConfig = Object.assign({}, hubConfig, data);
   }
@@ -425,7 +425,7 @@ function setupTopActions() {
 
 function renderMeta(item) {
   const meta = document.createElement('div');
-  meta.className = 'v13-meta';
+  meta.className = 'app-meta';
 
   if (hubConfig.showStatus !== false) {
     const status = getStatus(item.status);
@@ -448,7 +448,7 @@ function renderMeta(item) {
 
 function setImageFallback(image) {
   image.addEventListener('error', function() {
-    image.src = 'icon-192.png';
+    image.src = 'assets/icons/icon-192.png';
   }, {once:true});
 }
 
@@ -460,7 +460,7 @@ function openAppDetails(item) {
 
   const logo = document.createElement('img');
   logo.className = 'detail-logo';
-  logo.src = safeAssetUrl(item.logo,'icon-192.png');
+  logo.src = safeAssetUrl(item.logo,'assets/icons/icon-192.png');
   logo.alt = '';
   setImageFallback(logo);
 
@@ -511,14 +511,14 @@ function buildCard(item) {
   const canLaunch = isSafeUrl(item.url) && status !== 'coming-soon';
 
   const article = document.createElement('article');
-  article.className = 'v13-card card-' + (VALID_THEMES.has(item.theme) ? item.theme : 'blue');
+  article.className = 'app-card card-' + (VALID_THEMES.has(item.theme) ? item.theme : 'blue');
 
   if (status === 'maintenance') article.classList.add('is-maintenance');
   if (status === 'coming-soon') article.classList.add('is-coming-soon');
   if (item.featured) article.classList.add('is-featured');
 
   const main = document.createElement(canLaunch ? 'a' : 'div');
-  main.className = 'v13-launch' + (canLaunch ? '' : ' is-disabled');
+  main.className = 'app-launch' + (canLaunch ? '' : ' is-disabled');
 
   if (canLaunch) {
     main.href = new URL(item.url, window.location.href).href;
@@ -529,17 +529,17 @@ function buildCard(item) {
   }
 
   const logo = document.createElement('img');
-  logo.className = 'v13-logo';
-  logo.src = safeAssetUrl(item.logo,'icon-192.png');
+  logo.className = 'app-logo';
+  logo.src = safeAssetUrl(item.logo,'assets/icons/icon-192.png');
   logo.alt = '';
   setImageFallback(logo);
 
   const content = document.createElement('div');
-  content.className = 'v13-copy';
+  content.className = 'app-copy';
 
   const titleRow = document.createElement('div');
-  titleRow.className = 'v13-title-row';
-  titleRow.append(textEl('strong','v13-title',item.title || 'App'));
+  titleRow.className = 'app-title-row';
+  titleRow.append(textEl('strong','app-title',item.title || 'App'));
 
   if (item.featured) {
     titleRow.append(textEl('span','featured-badge',item.featuredLabel || 'FEATURED'));
@@ -547,11 +547,11 @@ function buildCard(item) {
 
   content.append(
     titleRow,
-    textEl('span','v13-desc',item.description || ''),
+    textEl('span','app-desc',item.description || ''),
     renderMeta(item)
   );
 
-  const arrow = textEl('span','v13-arrow',canLaunch ? '›' : '•');
+  const arrow = textEl('span','app-arrow',canLaunch ? '›' : '•');
   arrow.setAttribute('aria-hidden','true');
 
   main.append(logo,content,arrow);
@@ -571,7 +571,7 @@ async function loadApps() {
   const container = document.getElementById('links-container');
   if (!container) return;
 
-  const data = await fetchJson('links.json',[]);
+  const data = await fetchJson('data/links.json',[]);
   const items = Array.isArray(data)
     ? data
       .filter(function(item){
@@ -641,7 +641,7 @@ async function maybeRecordExternalVisit() {
 }
 
 async function loadChangelog() {
-  const data = await fetchJson('changelog.json',[]);
+  const data = await fetchJson('data/changelog.json',[]);
   changelogData = Array.isArray(data) ? data : [];
 }
 

@@ -1,5 +1,18 @@
 [
   {
+    "version": "1.4.0",
+    "date": "2026-09-26",
+    "title": "Structured Repository",
+    "changes": [
+      "Reorganized the repository into css, js, data, and structured asset folders while keeping only core PWA entry files at the root.",
+      "Moved profile imagery, PWA icons, app logos, and the Hub QR code into dedicated asset subfolders.",
+      "Updated every runtime, manifest, cache, and data reference to the new paths without changing the approved visual design.",
+      "Renamed internal v13-prefixed UI classes to stable app-prefixed names for cleaner long-term maintenance.",
+      "Updated Service Worker data caching so nested data files retain their correct canonical cache paths.",
+      "Expanded CI validation to enforce the v1.4.0 repository structure and prevent loose legacy files from returning."
+    ]
+  },
+  {
     "version": "1.3.1",
     "date": "2026-09-26",
     "title": "Audit Hardening",

@@ -1,4 +1,4 @@
-const VERSION = '1.3.1';
+const VERSION = '1.4.0';
 const CACHE_PREFIX = 'rmacfie-pwa-hub';
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${VERSION}`;
@@ -6,22 +6,22 @@ const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${VERSION}`;
 const CRITICAL_ASSETS = [
   './',
   './index.html',
-  './style.css',
-  './app.js',
+  './css/style.css',
+  './js/app.js',
   './manifest.json'
 ];
 
 const OPTIONAL_ASSETS = [
-  './links.json',
-  './config.json',
-  './changelog.json',
-  './qr-hub.svg',
-  './avatar.jpg',
-  './apple-touch-icon.png',
-  './icon-192.png',
-  './icon-512.svg',
-  './assets/glp1-icon.png',
-  './assets/ai-council-icon.png'
+  './data/links.json',
+  './data/config.json',
+  './data/changelog.json',
+  './assets/qr/qr-hub.svg',
+  './assets/profile/avatar.jpg',
+  './assets/icons/apple-touch-icon.png',
+  './assets/icons/icon-192.png',
+  './assets/icons/icon-512.svg',
+  './assets/logos/glp1-icon.png',
+  './assets/logos/ai-council-icon.png'
 ];
 
 self.addEventListener('install', (event) => {
@@ -65,9 +65,9 @@ self.addEventListener('message', (event) => {
 });
 
 function isDataRequest(url) {
-  return url.pathname.endsWith('/links.json') ||
-    url.pathname.endsWith('/config.json') ||
-    url.pathname.endsWith('/changelog.json');
+  return url.pathname.endsWith('/data/links.json') ||
+    url.pathname.endsWith('/data/config.json') ||
+    url.pathname.endsWith('/data/changelog.json');
 }
 
 function offlineResponse() {
@@ -141,8 +141,12 @@ async function staleWhileRevalidate(request) {
 }
 
 async function dataNetworkFirst(request) {
-  const fileName = new URL(request.url).pathname.split('/').pop();
-  const canonicalUrl = new URL(fileName, self.registration.scope).href;
+  const requestUrl = new URL(request.url);
+  const scopeUrl = new URL(self.registration.scope);
+  const relativePath = requestUrl.pathname.startsWith(scopeUrl.pathname)
+    ? requestUrl.pathname.slice(scopeUrl.pathname.length)
+    : requestUrl.pathname.split('/').pop();
+  const canonicalUrl = new URL(relativePath, self.registration.scope).href;
 
   try {
     const response = await fetch(request);

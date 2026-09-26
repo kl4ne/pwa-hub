@@ -14,13 +14,13 @@
   ],
   "icons": [
     {
-      "src": "icon-192.png",
+      "src": "assets/icons/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "icon-512.svg",
+      "src": "assets/icons/icon-512.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"

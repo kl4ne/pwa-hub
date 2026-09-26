@@ -22,7 +22,7 @@ jobs:
 
       - name: Validate JavaScript
         run: |
-          node --check app.js
+          node --check js/app.js
           node --check sw.js
 
       - name: Validate JSON and release integrity
@@ -33,17 +33,17 @@ jobs:
           const read = (file) => fs.readFileSync(file,'utf8');
           const json = (file) => JSON.parse(read(file));
 
-          for (const file of ['links.json','manifest.json','config.json','changelog.json']) {
+          for (const file of ['data/links.json','manifest.json','data/config.json','data/changelog.json']) {
             json(file);
             console.log(file + ' valid');
           }
 
           const index = read('index.html');
-          const app = read('app.js');
+          const app = read('js/app.js');
           const sw = read('sw.js');
           const manifest = json('manifest.json');
-          const config = json('config.json');
-          const changelog = json('changelog.json');
+          const config = json('data/config.json');
+          const changelog = json('data/changelog.json');
           const version = config.version;
 
           if (!/^\d+\.\d+\.\d+$/.test(version)) throw new Error('Invalid config version');
@@ -52,21 +52,51 @@ jobs:
           if (!index.includes(`<span>v${version}</span>`)) throw new Error('Footer version mismatch');
           if (changelog[0]?.version !== version) throw new Error('Latest changelog version mismatch');
 
-          if (!index.includes('href="style.css"')) throw new Error('style.css is not linked');
-          if (!index.includes('src="app.js"')) throw new Error('app.js is not linked');
-          if (index.includes('v13.css') || index.includes('app-v13.js')) throw new Error('Legacy v13 assets still referenced');
-          if (fs.existsSync('v13.css') || fs.existsSync('app-v13.js')) throw new Error('Legacy v13 split files still exist');
+          if (!index.includes('href="css/style.css"')) throw new Error('css/style.css is not linked');
+          if (!index.includes('src="js/app.js"')) throw new Error('js/app.js is not linked');
+          if (!app.includes("fetchJson('data/config.json'")) throw new Error('Config path mismatch');
+          if (!app.includes("fetchJson('data/links.json'")) throw new Error('Links path mismatch');
+          if (!app.includes("fetchJson('data/changelog.json'")) throw new Error('Changelog path mismatch');
 
           for (const token of ["connect-src 'self'","worker-src 'self'","object-src 'none'"]) {
             if (!index.includes(token)) throw new Error('Missing CSP directive: ' + token);
           }
 
-          for (const asset of ['style.css','app.js','manifest.json','icon-192.png','apple-touch-icon.png']) {
-            if (!fs.existsSync(asset)) throw new Error('Missing required asset: ' + asset);
+          const required = [
+            'index.html','sw.js','manifest.json','README.md','.nojekyll',
+            'css/style.css','js/app.js',
+            'data/config.json','data/links.json','data/changelog.json',
+            'assets/profile/avatar.jpg',
+            'assets/icons/apple-touch-icon.png','assets/icons/icon-192.png','assets/icons/icon-512.svg',
+            'assets/logos/glp1-icon.png','assets/logos/ai-council-icon.png',
+            'assets/qr/qr-hub.svg'
+          ];
+          for (const file of required) {
+            if (!fs.existsSync(file)) throw new Error('Missing required file: ' + file);
           }
 
-          if (!sw.includes("'./style.css'") || !sw.includes("'./app.js'")) {
+          const forbiddenLooseFiles = [
+            'style.css','app.js','links.json','config.json','changelog.json',
+            'avatar.jpg','apple-touch-icon.png','icon-192.png','icon-512.svg','qr-hub.svg'
+          ];
+          for (const file of forbiddenLooseFiles) {
+            if (fs.existsSync(file)) throw new Error('Legacy loose file still exists: ' + file);
+          }
+
+          const rootFiles = fs.readdirSync('.', {withFileTypes:true})
+            .filter(entry => entry.isFile())
+            .map(entry => entry.name)
+            .sort();
+          const allowedRootFiles = new Set(['.nojekyll','README.md','index.html','manifest.json','sw.js']);
+          for (const file of rootFiles) {
+            if (!allowedRootFiles.has(file)) throw new Error('Unexpected loose root file: ' + file);
+          }
+
+          if (!sw.includes("'./css/style.css'") || !sw.includes("'./js/app.js'")) {
             throw new Error('Service Worker critical shell is incomplete');
+          }
+          if (!sw.includes("'./data/links.json'") || !sw.includes("'./data/config.json'") || !sw.includes("'./data/changelog.json'")) {
+            throw new Error('Service Worker data cache paths are incomplete');
           }
 
           const themeMatch = index.match(/name="theme-color" content="([^"]+)"/);
@@ -74,18 +104,26 @@ jobs:
           if (manifest.theme_color !== themeMatch[1]) throw new Error('Manifest theme_color mismatch');
           if (manifest.background_color !== themeMatch[1]) throw new Error('Manifest background_color mismatch');
 
+          for (const icon of manifest.icons || []) {
+            if (!fs.existsSync(icon.src)) throw new Error('Missing manifest icon: ' + icon.src);
+          }
+
           if (!/^#[0-9a-f]{6}$/i.test(config.accent)) throw new Error('Invalid accent color');
           if (!/^#[0-9a-f]{6}$/i.test(config.accentSecondary)) throw new Error('Invalid secondary accent color');
 
           const hubUrl = new URL(config.hubUrl);
           if (hubUrl.protocol !== 'https:') throw new Error('Hub URL must use HTTPS');
 
-          if (!fs.existsSync(config.qrImage || 'qr-hub.svg')) throw new Error('Missing QR image');
+          if (!fs.existsSync(config.qrImage)) throw new Error('Missing QR image');
 
           if (config.analyticsEndpoint) {
             const endpoint = new URL(config.analyticsEndpoint);
             if (endpoint.protocol !== 'https:') throw new Error('Analytics endpoint must use HTTPS');
             if (endpoint.origin !== hubUrl.origin) throw new Error('Analytics endpoint must be same-origin under the current CSP');
+          }
+
+          if (/\bv13-(card|launch|logo|copy|title|desc|meta|arrow)\b/.test(app + read('css/style.css'))) {
+            throw new Error('Legacy v13 UI class names remain');
           }
 
           console.log('Release integrity validated for v' + version);
@@ -95,13 +133,13 @@ jobs:
         run: |
           node - <<'NODE'
           const fs = require('fs');
-          const links = JSON.parse(fs.readFileSync('links.json','utf8'));
+          const links = JSON.parse(fs.readFileSync('data/links.json','utf8'));
           const validStatuses = new Set(['live','beta','coming-soon','maintenance']);
           const validThemes = new Set(['blue','green','orange','pink']);
           const validOpen = new Set(['new','same']);
 
           if (!Array.isArray(links) || !links.length) {
-            throw new Error('links.json must contain at least one app');
+            throw new Error('data/links.json must contain at least one app');
           }
 
           const orders = new Set();
@@ -123,6 +161,7 @@ jobs:
 
             if (app.logo) {
               if (/^https?:/i.test(app.logo)) throw new Error('App logos must be local: ' + app.logo);
+              if (!app.logo.startsWith('assets/logos/')) throw new Error('App logo is outside assets/logos: ' + app.logo);
               if (!fs.existsSync(app.logo)) throw new Error('Missing logo: ' + app.logo);
             }
 
