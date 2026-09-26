@@ -38,6 +38,14 @@ Supported icons: `health`, `council`, `code`, `chart`, `notes`. Any unknown icon
 
 Production links must use HTTPS. Plain HTTP is accepted only for localhost development.
 
+## v1.2.0 install/update refinement
+
+- Automatic updates now activate silently with no user-facing update prompt.
+- The Hub reloads automatically after a new Service Worker takes control.
+- The Install button is always available when the Hub is not already installed.
+- Chromium-based browsers use the native PWA install prompt when available.
+- Browsers that do not expose a programmatic install prompt show concise platform-appropriate installation instructions.
+
 ## v1.2.0 mobile-launcher refinement
 
 - Reworked the layout to match the compact mobile-launcher composition used as the visual reference.
