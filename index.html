@@ -16,6 +16,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
   <link rel="canonical" href="https://kl4ne.github.io/pwa-hub/">
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="v13.css">
 
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -55,7 +56,11 @@
         <button type="button" class="quick-btn" id="copy-button">
           <span aria-hidden="true">⧉</span><span>Copy</span>
         </button>
+        <button type="button" class="quick-btn" id="qr-button">
+          <span aria-hidden="true">▦</span><span>QR</span>
+        </button>
       </div>
+      <p class="offline-note" id="offline-note" hidden>Offline mode • cached apps available</p>
     </header>
 
     <section class="apps-section" aria-label="My Progressive Web Apps">
@@ -63,10 +68,15 @@
     </section>
 
     <footer class="hub-footer">
+      <div class="footer-tools" aria-label="Hub information">
+        <span>v1.3.0</span>
+        <button type="button" id="changelog-button">Changelog</button>
+        <button type="button" id="about-button">About</button>
+      </div>
       <p>Designed &amp; Developed by <strong>Roberto S. Macfie</strong></p>
     </footer>
   </main>
 
-  <script src="app.js"></script>
+  <script src="app-v13.js"></script>
 </body>
 </html>

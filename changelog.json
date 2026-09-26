@@ -1,0 +1,28 @@
+[
+  {
+    "version": "1.3.0",
+    "date": "2026-09-26",
+    "title": "Identity & Smart Launching",
+    "changes": [
+      "Added real app logos for GLP-1 Companion and AI Council.",
+      "Added compact LIVE/BETA/COMING SOON/MAINTENANCE status support.",
+      "Added app version and last-updated metadata.",
+      "Added QR sharing, app details, enhanced sharing, and copy actions.",
+      "Added configurable accent colors through config.json.",
+      "Added order and featured-app support in links.json.",
+      "Added a private on-device visit counter with no external tracking by default.",
+      "Improved offline behavior and cached data/assets.",
+      "Expanded GitHub Actions validation for the new v1.3.0 data model."
+    ]
+  },
+  {
+    "version": "1.2.0",
+    "date": "2026-09-26",
+    "title": "Compact Mobile Launcher",
+    "changes": [
+      "Rebuilt the Hub around a centered phone-first launcher layout.",
+      "Added compact Install, Share and Copy actions.",
+      "Enabled silent PWA updates."
+    ]
+  }
+]

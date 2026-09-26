@@ -1,6 +1,23 @@
-# @rmacfie • PWA Hub — v1.2.0
+# @rmacfie • PWA Hub — v1.3.0
 
 A lightweight, installable Progressive Web App that acts as a personal launchpad for Roberto S. Macfie's PWAs and future web projects. It is designed for GitHub Pages and intentionally avoids frameworks, build tooling, databases, and third-party JavaScript dependencies.
+
+## v1.3.0 — Identity & Smart Launching
+
+- Real app logos sourced from the production app repositories.
+- QR sharing and enhanced Share/Copy actions.
+- Version and last-updated metadata on app cards.
+- LIVE, BETA, COMING SOON and MAINTENANCE status support.
+- Optional app-details modal.
+- Coming-soon card support without requiring a destination URL.
+- Compact changelog accessible from the footer.
+- Private on-device visit counter; no external analytics by default.
+- Explicit app ordering through `order` in `links.json`.
+- Configurable accent colors through `config.json`.
+- Featured-app support through `featured` and `featuredLabel`.
+- Improved offline caching for Hub data, QR code, and app logos.
+- Stronger GitHub Actions validation for the v1.3 data model.
+- The custom-domain item was intentionally excluded.
 
 ## Files
 

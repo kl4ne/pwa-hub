@@ -22,22 +22,47 @@ jobs:
 
       - name: Validate JavaScript
         run: |
+          node --check app-v13.js
           node --check app.js
           node --check sw.js
 
       - name: Validate JSON
         run: |
-          node -e "JSON.parse(require('fs').readFileSync('links.json','utf8')); JSON.parse(require('fs').readFileSync('manifest.json','utf8')); console.log('JSON valid')"
+          node - <<'NODE'
+          const fs = require('fs');
+          for (const file of ['links.json','manifest.json','config.json','changelog.json']) {
+            JSON.parse(fs.readFileSync(file,'utf8'));
+            console.log(file + ' valid');
+          }
+          NODE
 
-      - name: Validate production links
+      - name: Validate Hub data model
         run: |
           node - <<'NODE'
-          const links = require('./links.json');
+          const fs = require('fs');
+          const links = JSON.parse(fs.readFileSync('links.json','utf8'));
+          const config = JSON.parse(fs.readFileSync('config.json','utf8'));
+          const validStatuses = new Set(['live','beta','coming-soon','maintenance']);
+          const validThemes = new Set(['blue','green','orange','pink']);
+
           if (!Array.isArray(links) || !links.length) throw new Error('links.json must contain at least one app');
+          const orders = new Set();
+
           for (const app of links) {
-            const url = new URL(app.url);
-            if (url.protocol !== 'https:') throw new Error(`Non-HTTPS URL: ${app.url}`);
             if (!app.title || !app.description) throw new Error('Each app needs title and description');
+            if (!validStatuses.has(app.status)) throw new Error('Invalid status for ' + app.title);
+            if (!validThemes.has(app.theme)) throw new Error('Invalid theme for ' + app.title);
+            if (!Number.isFinite(app.order)) throw new Error('Missing numeric order for ' + app.title);
+            if (orders.has(app.order)) throw new Error('Duplicate order: ' + app.order);
+            orders.add(app.order);
+            if (app.status !== 'coming-soon') {
+              const url = new URL(app.url);
+              if (url.protocol !== 'https:') throw new Error('Non-HTTPS URL: ' + app.url);
+            }
+            if (app.logo && !fs.existsSync(app.logo)) throw new Error('Missing logo: ' + app.logo);
           }
-          console.log(`Validated ${links.length} app links`);
+
+          if (!/^#[0-9a-f]{6}$/i.test(config.accent)) throw new Error('Invalid accent color');
+          if (!fs.existsSync(config.qrImage || 'qr-hub.svg')) throw new Error('Missing QR image');
+          console.log('Validated ' + links.length + ' apps');
           NODE

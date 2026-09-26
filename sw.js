@@ -1,4 +1,4 @@
-const VERSION = '1.2.0-ui5';
+const VERSION = '1.3.0';
 const CACHE_PREFIX = 'rmacfie-pwa-hub';
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${VERSION}`;
@@ -7,16 +7,22 @@ const CRITICAL_ASSETS = [
   './',
   './index.html',
   './style.css',
-  './app.js',
+  './v13.css',
+  './app-v13.js',
   './manifest.json'
 ];
 
 const OPTIONAL_ASSETS = [
   './links.json',
+  './config.json',
+  './changelog.json',
+  './qr-hub.svg',
   './avatar.jpg',
   './apple-touch-icon.png',
   './icon-192.png',
   './icon-512.svg',
+  './assets/glp1-icon.png',
+  './assets/ai-council-icon.png'
 ];
 
 self.addEventListener('install', (event) => {
@@ -62,8 +68,10 @@ self.addEventListener('message', (event) => {
   }
 });
 
-function isLinksRequest(url) {
-  return url.pathname.endsWith('/links.json');
+function isDataRequest(url) {
+  return url.pathname.endsWith('/links.json') ||
+    url.pathname.endsWith('/config.json') ||
+    url.pathname.endsWith('/changelog.json');
 }
 
 async function networkFirst(request, cacheName, fallbackUrl = null) {
@@ -117,8 +125,8 @@ async function cacheFirst(request) {
   return response;
 }
 
-async function linksNetworkFirst(request) {
-  const canonicalUrl = new URL('./links.json', self.registration.scope).href;
+async function dataNetworkFirst(request) {
+  const canonicalUrl = new URL(new URL(request.url).pathname.split('/').pop(), self.registration.scope).href;
 
   try {
     const response = await fetch(request);
@@ -147,8 +155,8 @@ self.addEventListener('fetch', (event) => {
   // Do not interfere with third-party resources or destination sites.
   if (url.origin !== self.location.origin) return;
 
-  if (isLinksRequest(url)) {
-    event.respondWith(linksNetworkFirst(request));
+  if (isDataRequest(url)) {
+    event.respondWith(dataNetworkFirst(request));
     return;
   }
 
