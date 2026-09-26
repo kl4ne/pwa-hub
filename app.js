@@ -6,6 +6,7 @@ let deferredInstallPrompt = null;
 
 function setupServiceWorker() {
   if (!('serviceWorker' in navigator)) return;
+
   let refreshing = false;
 
   navigator.serviceWorker.addEventListener('controllerchange', () => {
@@ -18,7 +19,9 @@ function setupServiceWorker() {
     try {
       const registration = await navigator.serviceWorker.register('./sw.js');
 
-      if (registration.waiting) showUpdateNotice(registration.waiting);
+      if (registration.waiting) {
+        registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+      }
 
       registration.addEventListener('updatefound', () => {
         const worker = registration.installing;
@@ -26,39 +29,16 @@ function setupServiceWorker() {
 
         worker.addEventListener('statechange', () => {
           if (worker.state === 'installed' && navigator.serviceWorker.controller) {
-            showUpdateNotice(worker);
+            worker.postMessage({ type: 'SKIP_WAITING' });
           }
         });
       });
+
+      registration.update().catch(() => {});
     } catch (error) {
       console.error('Service Worker registration failed:', error);
     }
   });
-}
-
-function showUpdateNotice(worker) {
-  if (!worker || document.querySelector('.update-toast')) return;
-
-  const notice = document.createElement('div');
-  notice.className = 'update-toast';
-  notice.setAttribute('role', 'status');
-  notice.setAttribute('aria-live', 'polite');
-
-  const text = document.createElement('span');
-  text.textContent = 'A new Hub version is ready.';
-
-  const button = document.createElement('button');
-  button.type = 'button';
-  button.className = 'update-button';
-  button.textContent = 'Update';
-  button.addEventListener('click', () => {
-    button.disabled = true;
-    button.textContent = 'Updating…';
-    worker.postMessage({ type: 'SKIP_WAITING' });
-  });
-
-  notice.append(text, button);
-  document.body.appendChild(notice);
 }
 
 const avatar = document.querySelector('.avatar');
@@ -173,14 +153,63 @@ async function loadLinks() {
   }
 }
 
+function isStandalone() {
+  return window.matchMedia('(display-mode: standalone)').matches ||
+    window.navigator.standalone === true;
+}
+
+function showInstallHelp() {
+  document.querySelector('.install-help')?.remove();
+
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+  const overlay = document.createElement('div');
+  overlay.className = 'install-help';
+  overlay.setAttribute('role', 'dialog');
+  overlay.setAttribute('aria-modal', 'true');
+  overlay.setAttribute('aria-label', 'Install PWA Hub');
+
+  const panel = document.createElement('div');
+  panel.className = 'install-help-panel';
+
+  const title = makeText('strong', 'install-help-title', 'Install PWA Hub');
+  const message = makeText(
+    'p',
+    'install-help-text',
+    isIOS
+      ? 'Tap the Share button in Safari, choose “Add to Home Screen”, then tap “Add”.'
+      : 'Open your browser menu and choose “Install app” or “Add to Home screen”.'
+  );
+
+  const close = makeText('button', 'install-help-close', 'Got it');
+  close.type = 'button';
+  close.addEventListener('click', () => overlay.remove());
+
+  panel.append(title, message, close);
+  overlay.append(panel);
+  overlay.addEventListener('click', (event) => {
+    if (event.target === overlay) overlay.remove();
+  });
+
+  document.body.appendChild(overlay);
+  close.focus();
+}
+
 function setupInstallButton() {
   const button = document.getElementById('install-button');
   if (!button) return;
 
+  if (isStandalone()) {
+    button.hidden = true;
+    return;
+  }
+
+  button.hidden = false;
+
   window.addEventListener('beforeinstallprompt', (event) => {
     event.preventDefault();
     deferredInstallPrompt = event;
-    button.hidden = false;
   });
 
   window.addEventListener('appinstalled', () => {
@@ -189,11 +218,25 @@ function setupInstallButton() {
   });
 
   button.addEventListener('click', async () => {
-    if (!deferredInstallPrompt) return;
-    deferredInstallPrompt.prompt();
-    try { await deferredInstallPrompt.userChoice; } catch {}
-    deferredInstallPrompt = null;
-    button.hidden = true;
+    if (isStandalone()) {
+      button.hidden = true;
+      return;
+    }
+
+    if (!deferredInstallPrompt) {
+      showInstallHelp();
+      return;
+    }
+
+    try {
+      deferredInstallPrompt.prompt();
+      await deferredInstallPrompt.userChoice;
+    } catch (error) {
+      console.warn('Install prompt failed:', error);
+      showInstallHelp();
+    } finally {
+      deferredInstallPrompt = null;
+    }
   });
 }
 
