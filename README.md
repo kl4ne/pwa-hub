@@ -1,4 +1,4 @@
-# @rmacfie • PWA Hub — v1.1.0
+# @rmacfie • PWA Hub — v1.2.0
 
 A lightweight, installable Progressive Web App that acts as a personal launchpad for Roberto S. Macfie's PWAs and future web projects. It is designed for GitHub Pages and intentionally avoids frameworks, build tooling, databases, and third-party JavaScript dependencies.
 
@@ -37,6 +37,15 @@ Supported icons: `health`, `council`, `code`, `chart`, `notes`. Any unknown icon
 `open` may be `new` (default) or `same`.
 
 Production links must use HTTPS. Plain HTTP is accepted only for localhost development.
+
+## v1.2.0 changes
+
+- Major visual redesign with a premium hero, ambient background, glass panels and richer app cards.
+- Added Install Hub, Share and Copy Link quick actions.
+- Added live app count, online/offline state, app categories and status badges.
+- Improved desktop and mobile layouts while keeping the static, dependency-free architecture.
+- Added automatic GitHub Actions validation for JavaScript and JSON files.
+- Updated the Service Worker cache version for a clean v1.2.0 rollout.
 
 ## v1.1.0 changes
 
