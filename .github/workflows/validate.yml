@@ -1,0 +1,43 @@
+name: Validate PWA Hub
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Validate JavaScript
+        run: |
+          node --check app.js
+          node --check sw.js
+
+      - name: Validate JSON
+        run: |
+          node -e "JSON.parse(require('fs').readFileSync('links.json','utf8')); JSON.parse(require('fs').readFileSync('manifest.json','utf8')); console.log('JSON valid')"
+
+      - name: Validate production links
+        run: |
+          node - <<'NODE'
+          const links = require('./links.json');
+          if (!Array.isArray(links) || !links.length) throw new Error('links.json must contain at least one app');
+          for (const app of links) {
+            const url = new URL(app.url);
+            if (url.protocol !== 'https:') throw new Error(`Non-HTTPS URL: ${app.url}`);
+            if (!app.title || !app.description) throw new Error('Each app needs title and description');
+          }
+          console.log(`Validated ${links.length} app links`);
+          NODE
