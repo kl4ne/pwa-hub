@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="PWA Hub">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1e293b"/>
+      <stop offset="1" stop-color="#0d131f"/>
+    </linearGradient>
+    <linearGradient id="ring" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#38bdf8"/>
+      <stop offset="1" stop-color="#0ea5e9"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <circle cx="256" cy="230" r="134" fill="#111827" stroke="url(#ring)" stroke-width="18"/>
+  <circle cx="256" cy="202" r="52" fill="#cbd5e1"/>
+  <path d="M154 342c15-61 54-91 102-91s87 30 102 91" fill="#cbd5e1"/>
+  <rect x="146" y="381" width="220" height="54" rx="27" fill="#0ea5e9"/>
+  <text x="256" y="418" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="32" font-weight="700" fill="#ffffff">PWA HUB</text>
+</svg>

@@ -1,0 +1,29 @@
+{
+  "id": "./",
+  "name": "@rmacfie • PWA Hub",
+  "short_name": "PWA Hub",
+  "description": "Progressive Web Apps portal by Roberto S. Macfie",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0d131f",
+  "theme_color": "#0d131f",
+  "categories": [
+    "productivity",
+    "utilities"
+  ],
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

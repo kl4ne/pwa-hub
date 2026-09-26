@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https://ui-avatars.com; manifest-src 'self'; base-uri 'self'; form-action 'self';">
+
+  <title>@rmacfie • PWA Hub</title>
+  <meta name="description" content="Progressive Web Apps portal by Roberto S. Macfie">
+  <meta name="color-scheme" content="dark">
+  <meta name="application-name" content="PWA Hub">
+  <meta name="referrer" content="no-referrer">
+
+  <!-- Web App Manifest -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0d131f">
+
+  <!-- iOS PWA settings -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="PWA Hub">
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="icon-192.png">
+  <link rel="canonical" href="https://kl4ne.github.io/pwa-hub/">
+  <link rel="stylesheet" href="style.css">
+
+  <!-- Open Graph / Social previews -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="@rmacfie • PWA Hub">
+  <meta property="og:description" content="Progressive Web Apps portal by Roberto S. Macfie">
+  <meta property="og:url" content="https://kl4ne.github.io/pwa-hub/">
+  <meta property="og:image" content="https://kl4ne.github.io/pwa-hub/icon-192.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+
+  <!-- Twitter/X previews -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="@rmacfie • PWA Hub">
+  <meta name="twitter:description" content="Progressive Web Apps portal by Roberto S. Macfie">
+  <meta name="twitter:image" content="https://kl4ne.github.io/pwa-hub/icon-192.png">
+</head>
+<body>
+  <main class="hub-container">
+    <header class="hub-header">
+      <div class="avatar-wrapper">
+        <img src="avatar.jpg" alt="Roberto S. Macfie" class="avatar" width="92" height="92" fetchpriority="high">
+      </div>
+      <h1 class="username">@rmacfie <span class="dot">•</span> PWA Hub</h1>
+      <p class="tagline">Progressive Web Apps • Ready to launch</p>
+    </header>
+
+    <section id="links-container" class="links-list" aria-label="Web applications">
+      <!-- Generated automatically via JavaScript -->
+      <noscript>
+        <p class="empty-state">Please enable JavaScript to view the available applications.</p>
+      </noscript>
+    </section>
+
+    <footer class="hub-footer">
+      <div class="pwa-badge">
+        <span class="badge-pill">PWA</span>
+        <span>Hosted on GitHub Pages</span>
+      </div>
+      <p class="credit">Designed &amp; Developed by<br><strong>Roberto S. Macfie</strong></p>
+    </footer>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

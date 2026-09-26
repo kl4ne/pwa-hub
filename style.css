@@ -1,0 +1,295 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  background-color: #0d131f;
+  background-image: radial-gradient(circle at 50% 0%, #1e293b 0%, #0d131f 75%);
+  color: #ffffff;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: max(40px, env(safe-area-inset-top)) 20px max(40px, env(safe-area-inset-bottom));
+}
+
+.hub-container {
+  width: 100%;
+  max-width: 440px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Profile header */
+.hub-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.avatar-wrapper {
+  display: inline-block;
+  padding: 3px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #38bdf8, #0ea5e9, #0284c7);
+  box-shadow: 0 8px 24px rgba(14, 165, 233, 0.35);
+  margin-bottom: 18px;
+}
+
+.avatar {
+  width: 92px;
+  height: 92px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+  background-color: #1e293b;
+}
+
+.username {
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin-bottom: 6px;
+  color: #f8fafc;
+}
+
+.username .dot {
+  color: #64748b;
+  margin: 0 4px;
+}
+
+.tagline {
+  font-size: 0.88rem;
+  color: #94a3b8;
+  font-weight: 400;
+}
+
+/* Links List */
+.links-list {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.link-card {
+  display: flex;
+  align-items: center;
+  padding: 14px 18px;
+  border-radius: 14px;
+  text-decoration: none;
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.link-card:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.06);
+}
+
+.link-card:active {
+  transform: scale(0.98);
+}
+
+/*
+ * Paletas de color. Los tonos "claros" originales (#0284c7, #10b981,
+ * #f97316, #ec4899) no pasaban WCAG AA (4.5:1) con texto blanco encima
+ * -- el peor caso, verde, daba 2.54:1. Se oscurecieron ambos extremos del
+ * degradado un ~32% (misma proporción, mismo matiz, conserva la forma del
+ * degradado) para que el título llegue a >=5:1 y la descripción a >=4.5:1
+ * en las 4 combinaciones. Ver cálculo de contraste en la auditoría.
+ */
+.card-blue {
+  background: linear-gradient(135deg, #015a87 0%, #02476d 100%);
+  border-color: rgba(56, 189, 248, 0.3);
+}
+
+.card-green {
+  background: linear-gradient(135deg, #0b7e58 0%, #03523b 100%);
+  border-color: rgba(52, 211, 153, 0.3);
+}
+
+.card-orange {
+  background: linear-gradient(135deg, #a94e0f 0%, #842c08 100%);
+  border-color: rgba(251, 146, 60, 0.3);
+}
+
+.card-pink {
+  background: linear-gradient(135deg, #a03168 0%, #81103f 100%);
+  border-color: rgba(244, 114, 182, 0.3);
+}
+
+/* Card internals */
+.card-icon {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 14px;
+  backdrop-filter: blur(4px);
+}
+
+.card-icon svg {
+  width: 22px;
+  height: 22px;
+  stroke: #ffffff;
+}
+
+.card-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.card-title {
+  display: block;
+  font-size: 0.98rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.card-desc {
+  display: block;
+  font-size: 0.8rem;
+  /* 0.82 -> 0.92 de opacidad: necesario junto con el oscurecimiento del
+     fondo para que el texto secundario también cumpla 4.5:1 (antes 2.3-3.3:1) */
+  color: rgba(255, 255, 255, 0.92);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.card-arrow {
+  opacity: 0.6;
+  display: flex;
+  align-items: center;
+}
+
+.card-arrow svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Estado vacío / sin JS (antes iba como estilo inline, movido aquí para
+   permitir un CSP sin 'unsafe-inline' en style-src) */
+.empty-state {
+  color: #94a3b8;
+  font-size: 0.85rem;
+  padding: 20px;
+  text-align: center;
+}
+
+/* Footer */
+.hub-footer {
+  margin-top: 36px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.pwa-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.badge-pill {
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 6px;
+  letter-spacing: 0.04em;
+}
+
+.credit {
+  font-size: 0.82rem;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+.credit strong {
+  color: #cbd5e1;
+  font-weight: 600;
+}
+
+/* Keyboard accessibility */
+.link-card:focus-visible,
+.update-button:focus-visible {
+  outline: 3px solid #f8fafc;
+  outline-offset: 3px;
+}
+
+/* Service-worker update notice */
+.update-toast {
+  position: fixed;
+  left: 50%;
+  bottom: max(18px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 1000;
+  width: min(calc(100% - 32px), 420px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.96);
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(12px);
+  color: #e2e8f0;
+  font-size: 0.82rem;
+}
+
+.update-button {
+  appearance: none;
+  border: 0;
+  border-radius: 9px;
+  padding: 8px 12px;
+  background: #ffffff;
+  color: #0f172a;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.update-button:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
