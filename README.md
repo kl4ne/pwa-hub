@@ -38,6 +38,16 @@ Supported icons: `health`, `council`, `code`, `chart`, `notes`. Any unknown icon
 
 Production links must use HTTPS. Plain HTTP is accepted only for localhost development.
 
+## v1.2.0 mobile-launcher refinement
+
+- Reworked the layout to match the compact mobile-launcher composition used as the visual reference.
+- Centered the circular avatar, name and English subtitle.
+- Changed the subtitle to **My Progressive Web Apps • Ready to Use**.
+- Reduced Install, Share and Copy actions to compact controls.
+- Simplified every app card into a small colorful launcher row: icon, title, description and arrow.
+- Stacked app cards vertically and narrowed the entire Hub for a phone-first presentation.
+- Footer now reads **Designed & Developed by Roberto S. Macfie**.
+
 ## v1.2.0 changes
 
 - Major visual redesign with a premium hero, ambient background, glass panels and richer app cards.
