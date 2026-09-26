@@ -1,4 +1,4 @@
-const VERSION = '1.1.0';
+const VERSION = '1.2.0';
 const CACHE_PREFIX = 'rmacfie-pwa-hub';
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${VERSION}`;
