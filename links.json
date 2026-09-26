@@ -1,18 +1,22 @@
 [
   {
     "title": "GLP-1 Companion",
-    "description": "Metabolic health tracker & companion",
+    "description": "Metabolic health tracker, progress companion, and wellness support app.",
     "url": "https://kl4ne.github.io/mounjaro/",
     "theme": "blue",
     "icon": "health",
-    "open": "new"
+    "open": "new",
+    "status": "Live",
+    "category": "Health"
   },
   {
     "title": "AI Council",
-    "description": "Multi-agent deliberative intelligence",
+    "description": "Multi-agent deliberative intelligence workspace for advanced AI collaboration.",
     "url": "https://ai-council.kl4ne.workers.dev/",
     "theme": "green",
     "icon": "council",
-    "open": "new"
+    "open": "new",
+    "status": "Live",
+    "category": "AI"
   }
 ]
