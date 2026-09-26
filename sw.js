@@ -1,4 +1,4 @@
-const VERSION = '1.2.0-ui4';
+const VERSION = '1.2.0-ui5';
 const CACHE_PREFIX = 'rmacfie-pwa-hub';
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${VERSION}`;
@@ -36,6 +36,8 @@ self.addEventListener('install', (event) => {
         console.warn('[sw] Optional asset was not precached:', OPTIONAL_ASSETS[index]);
       }
     });
+
+    await self.skipWaiting();
   })());
 });
 
