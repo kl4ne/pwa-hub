@@ -1,4 +1,4 @@
-const HUB_VERSION = '1.1.0';
+const HUB_VERSION = '1.2.0';
 const VALID_THEMES = new Set(['blue', 'green', 'orange', 'pink']);
 const VALID_OPEN_MODES = new Set(['new', 'same']);
 
@@ -117,50 +117,69 @@ function showEmptyState(message) {
   container.appendChild(p);
 }
 
-function buildCard(item) {
-  if (!item || typeof item !== 'object' || !item.url || !isSafeUrl(item.url)) {
-    return null;
+function domainLabel(value) {
+  try {
+    const url = new URL(value);
+    return url.hostname + url.pathname.replace(/\/$/, '');
+  } catch {
+    return 'External app';
   }
+}
+
+function makeText(tag, className, text) {
+  const el = document.createElement(tag);
+  if (className) el.className = className;
+  el.textContent = text;
+  return el;
+}
+
+function buildCard(item) {
+  if (!item || typeof item !== 'object' || !item.url || !isSafeUrl(item.url)) return null;
 
   const card = document.createElement('a');
-  card.href = new URL(item.url, window.location.href).href;
-  card.className = `link-card card-${getTheme(item.theme)}`;
-
   const openMode = getOpenMode(item.open);
+  card.href = new URL(item.url, window.location.href).href;
+  card.className = `app-card card-${getTheme(item.theme)}`;
+
   if (openMode === 'new') {
     card.target = '_blank';
     card.rel = 'noopener noreferrer';
   }
+
+  const top = document.createElement('div');
+  top.className = 'card-top';
 
   const iconWrapper = document.createElement('div');
   iconWrapper.className = 'card-icon';
   iconWrapper.setAttribute('aria-hidden', 'true');
   iconWrapper.innerHTML = getIcon(item.icon);
 
-  const content = document.createElement('div');
-  content.className = 'card-content';
+  const badges = document.createElement('div');
+  badges.className = 'card-badges';
+  badges.append(
+    makeText('span', 'card-status', typeof item.status === 'string' && item.status.trim() ? item.status.trim() : 'Live'),
+    makeText('span', 'card-mode', openMode === 'new' ? 'New tab' : 'Same tab')
+  );
+  top.append(iconWrapper, badges);
 
-  const title = document.createElement('span');
-  title.className = 'card-title';
-  title.textContent = typeof item.title === 'string' && item.title.trim() ? item.title.trim() : 'App';
+  const body = document.createElement('div');
+  body.className = 'card-body';
+  const title = typeof item.title === 'string' && item.title.trim() ? item.title.trim() : 'App';
+  const description = typeof item.description === 'string' ? item.description.trim() : '';
+  body.append(
+    makeText('span', 'card-category', typeof item.category === 'string' && item.category.trim() ? item.category.trim() : 'App'),
+    makeText('strong', 'card-title', title),
+    makeText('span', 'card-desc', description)
+  );
 
-  const desc = document.createElement('span');
-  desc.className = 'card-desc';
-  desc.textContent = typeof item.description === 'string' ? item.description.trim() : '';
+  const footer = document.createElement('div');
+  footer.className = 'card-footer';
+  const launch = makeText('span', 'launch', '↗');
+  launch.setAttribute('aria-hidden', 'true');
+  footer.append(makeText('span', 'domain-pill', domainLabel(item.url)), launch);
 
-  content.append(title, desc);
-
-  const arrow = document.createElement('div');
-  arrow.className = 'card-arrow';
-  arrow.setAttribute('aria-hidden', 'true');
-  arrow.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>`;
-
-  card.append(iconWrapper, content, arrow);
-
-  if (openMode === 'new') {
-    card.setAttribute('aria-label', `${title.textContent}. Opens in a new tab.`);
-  }
-
+  card.append(top, body, footer);
+  card.setAttribute('aria-label', `${title}. ${description}${openMode === 'new' ? ' Opens in a new tab.' : ''}`);
   return card;
 }
 
@@ -186,15 +205,98 @@ async function loadLinks() {
 
     if (rendered === 0) {
       showEmptyState('No applications published yet.');
+      const count = document.getElementById('app-count');
+      if (count) count.textContent = '0';
       return;
     }
 
     container.replaceChildren(fragment);
+    const count = document.getElementById('app-count');
+    if (count) count.textContent = String(rendered);
   } catch (error) {
     console.error('Data error:', error);
     showEmptyState('Applications will be available shortly.');
+    const count = document.getElementById('app-count');
+    if (count) count.textContent = '0';
   }
 }
+
+
+const HUB_URL = 'https://kl4ne.github.io/pwa-hub/';
+let deferredInstallPrompt = null;
+
+function setupInstallAction() {
+  const button = document.getElementById('install-button');
+  if (!button) return;
+
+  window.addEventListener('beforeinstallprompt', (event) => {
+    event.preventDefault();
+    deferredInstallPrompt = event;
+    button.hidden = false;
+  });
+
+  window.addEventListener('appinstalled', () => {
+    deferredInstallPrompt = null;
+    button.hidden = true;
+  });
+
+  button.addEventListener('click', async () => {
+    if (!deferredInstallPrompt) return;
+    deferredInstallPrompt.prompt();
+    try { await deferredInstallPrompt.userChoice; } catch {}
+    deferredInstallPrompt = null;
+    button.hidden = true;
+  });
+}
+
+function flashAction(button, message, normal) {
+  const label = button?.querySelector('span:last-child');
+  if (!label) return;
+  label.textContent = message;
+  window.setTimeout(() => { label.textContent = normal; }, 1600);
+}
+
+function setupShareActions() {
+  const share = document.getElementById('share-button');
+  const copy = document.getElementById('copy-button');
+
+  share?.addEventListener('click', async () => {
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: '@rmacfie • PWA Hub',
+          text: 'Open my personal hub of PWAs and digital tools.',
+          url: HUB_URL
+        });
+      } else {
+        await navigator.clipboard.writeText(HUB_URL);
+        flashAction(share, 'Link Copied', 'Share');
+      }
+    } catch (error) {
+      console.warn('Share action failed:', error);
+    }
+  });
+
+  copy?.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(HUB_URL);
+      flashAction(copy, 'Copied', 'Copy Link');
+    } catch (error) {
+      console.warn('Copy action failed:', error);
+    }
+  });
+}
+
+function updateConnectionState() {
+  const state = document.getElementById('connection-state');
+  if (state) state.textContent = navigator.onLine ? 'Online' : 'Offline-ready';
+}
+
+window.addEventListener('online', updateConnectionState);
+window.addEventListener('offline', updateConnectionState);
+updateConnectionState();
+setupInstallAction();
+setupShareActions();
 
 loadLinks();
 
