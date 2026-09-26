@@ -1,4 +1,4 @@
-const VERSION = '1.3.0';
+const VERSION = '1.3.1';
 const CACHE_PREFIX = 'rmacfie-pwa-hub';
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${VERSION}`;
@@ -7,8 +7,7 @@ const CRITICAL_ASSETS = [
   './',
   './index.html',
   './style.css',
-  './v13.css',
-  './app-v13.js',
+  './app.js',
   './manifest.json'
 ];
 
@@ -28,11 +27,8 @@ const OPTIONAL_ASSETS = [
 self.addEventListener('install', (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(SHELL_CACHE);
-
-    // The shell must be complete before this worker is considered installed.
     await cache.addAll(CRITICAL_ASSETS);
 
-    // Optional media/data failures should not prevent installation.
     const results = await Promise.allSettled(
       OPTIONAL_ASSETS.map((url) => cache.add(url))
     );
@@ -74,75 +70,94 @@ function isDataRequest(url) {
     url.pathname.endsWith('/changelog.json');
 }
 
+function offlineResponse() {
+  return new Response('Offline', {
+    status:503,
+    headers:{'Content-Type':'text/plain; charset=utf-8'}
+  });
+}
+
+async function putIfCacheable(cacheName, request, response) {
+  if (!response || !response.ok) return;
+
+  try {
+    const cache = await caches.open(cacheName);
+    await cache.put(request, response.clone());
+  } catch (error) {
+    console.warn('[sw] Cache write failed:', error);
+  }
+}
+
 async function networkFirst(request, cacheName, fallbackUrl = null) {
   try {
     const response = await fetch(request);
 
     if (response && response.ok) {
-      const cache = await caches.open(cacheName);
-      await cache.put(request, response.clone());
+      await putIfCacheable(cacheName, request, response);
+      return response;
     }
 
-    return response;
-  } catch (error) {
-    const cached = await caches.match(request, { ignoreSearch: true });
+    const cached = await caches.match(request, {ignoreSearch:true});
     if (cached) return cached;
 
     if (fallbackUrl) {
-      const fallback = await caches.match(fallbackUrl, { ignoreSearch: true });
+      const fallback = await caches.match(fallbackUrl, {ignoreSearch:true});
       if (fallback) return fallback;
     }
 
-    throw error;
+    return response || offlineResponse();
+  } catch {
+    const cached = await caches.match(request, {ignoreSearch:true});
+    if (cached) return cached;
+
+    if (fallbackUrl) {
+      const fallback = await caches.match(fallbackUrl, {ignoreSearch:true});
+      if (fallback) return fallback;
+    }
+
+    return offlineResponse();
   }
 }
 
 async function staleWhileRevalidate(request) {
-  const cached = await caches.match(request, { ignoreSearch: true });
-  const cache = await caches.open(RUNTIME_CACHE);
+  const cached = await caches.match(request, {ignoreSearch:true});
 
   const networkPromise = fetch(request)
-    .then((response) => {
+    .then(async (response) => {
       if (response && response.ok) {
-        cache.put(request, response.clone());
+        await putIfCacheable(RUNTIME_CACHE, request, response);
       }
       return response;
     })
     .catch(() => null);
 
-  return cached || networkPromise;
-}
-
-async function cacheFirst(request) {
-  const cached = await caches.match(request, { ignoreSearch: true });
-  if (cached) return cached;
-
-  const response = await fetch(request);
-  if (response && response.ok) {
-    const cache = await caches.open(RUNTIME_CACHE);
-    await cache.put(request, response.clone());
+  if (cached) {
+    networkPromise.catch(() => {});
+    return cached;
   }
-  return response;
+
+  const response = await networkPromise;
+  return response || offlineResponse();
 }
 
 async function dataNetworkFirst(request) {
-  const canonicalUrl = new URL(new URL(request.url).pathname.split('/').pop(), self.registration.scope).href;
+  const fileName = new URL(request.url).pathname.split('/').pop();
+  const canonicalUrl = new URL(fileName, self.registration.scope).href;
 
   try {
     const response = await fetch(request);
 
     if (response && response.ok) {
       const cache = await caches.open(SHELL_CACHE);
-      // Store the latest successful response at one stable cache key so the
-      // timestamp query string used by app.js never fragments the cache.
       await cache.put(canonicalUrl, response.clone());
+      return response;
     }
 
-    return response;
-  } catch (error) {
-    const cached = await caches.match(canonicalUrl, { ignoreSearch: true });
-    if (cached) return cached;
-    throw error;
+    const cached = await caches.match(canonicalUrl, {ignoreSearch:true});
+    return cached || response || offlineResponse();
+  } catch {
+    const cached = await caches.match(canonicalUrl, {ignoreSearch:true});
+    return cached || offlineResponse();
   }
 }
 
@@ -152,7 +167,6 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(request.url);
 
-  // Do not interfere with third-party resources or destination sites.
   if (url.origin !== self.location.origin) return;
 
   if (isDataRequest(url)) {
@@ -165,13 +179,13 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  if (request.destination === 'script' || request.destination === 'style') {
+  if (
+    request.destination === 'script' ||
+    request.destination === 'style' ||
+    request.destination === 'image' ||
+    request.destination === 'manifest'
+  ) {
     event.respondWith(staleWhileRevalidate(request));
-    return;
-  }
-
-  if (request.destination === 'image' || request.destination === 'manifest') {
-    event.respondWith(cacheFirst(request));
     return;
   }
 

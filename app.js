@@ -1,155 +1,137 @@
-const HUB_VERSION = '1.2.0';
-const HUB_URL = 'https://kl4ne.github.io/pwa-hub/';
-const VALID_THEMES = new Set(['blue', 'green', 'orange', 'pink']);
-const VALID_OPEN_MODES = new Set(['new', 'same']);
+const HUB_VERSION = '1.3.1';
+const DEFAULT_HUB_URL = 'https://kl4ne.github.io/pwa-hub/';
+const VALID_THEMES = new Set(['blue','green','orange','pink']);
+const VALID_STATUS = new Set(['live','beta','coming-soon','maintenance']);
 let deferredInstallPrompt = null;
+let activeModal = null;
+let modalReturnFocus = null;
+let modalKeyHandler = null;
 
-function setupServiceWorker() {
-  if (!('serviceWorker' in navigator)) return;
-
-  let refreshing = false;
-
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (refreshing) return;
-    refreshing = true;
-    window.location.reload();
-  });
-
-  window.addEventListener('load', async () => {
-    try {
-      const registration = await navigator.serviceWorker.register('./sw.js');
-
-      if (registration.waiting) {
-        registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-      }
-
-      registration.addEventListener('updatefound', () => {
-        const worker = registration.installing;
-        if (!worker) return;
-
-        worker.addEventListener('statechange', () => {
-          if (worker.state === 'installed' && navigator.serviceWorker.controller) {
-            worker.postMessage({ type: 'SKIP_WAITING' });
-          }
-        });
-      });
-
-      registration.update().catch(() => {});
-    } catch (error) {
-      console.error('Service Worker registration failed:', error);
-    }
-  });
-}
-
-const avatar = document.querySelector('.avatar');
-avatar?.addEventListener('error', () => {
-  avatar.src = 'https://ui-avatars.com/api/?name=Roberto+Macfie&background=108a9d&color=fff&size=192';
-}, { once: true });
-
-const svgIcons = {
-  health: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/><path d="M12 5v14"/></svg>`,
-  council: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a4 4 0 0 1 4 4c0 1.95-1.4 3.58-3.25 3.93L13 14h-2l.25-4.07A4 4 0 0 1 12 2Z"/><circle cx="12" cy="18" r="2"/><path d="m4.93 19.07 2.83-2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4"/></svg>`,
-  code: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>`,
-  chart: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m7 16 4-5 4 3 5-7"/></svg>`,
-  notes: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M16 13H8M16 17H8"/></svg>`,
-  default: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="m10 8 4 4-4 4"/></svg>`
+let hubConfig = {
+  version:HUB_VERSION,
+  accent:'#42d7ff',
+  accentSecondary:'#2dd4bf',
+  hubUrl:DEFAULT_HUB_URL,
+  qrImage:'qr-hub.svg',
+  localPrivateVisits:true,
+  analyticsEndpoint:'',
+  showStatus:true,
+  showVersion:true,
+  showUpdated:true
 };
 
-function getIcon(name) {
-  return Object.prototype.hasOwnProperty.call(svgIcons, name) ? svgIcons[name] : svgIcons.default;
-}
+let changelogData = [];
 
-function getTheme(value) {
-  return VALID_THEMES.has(value) ? value : 'blue';
-}
-
-function getOpenMode(value) {
-  return VALID_OPEN_MODES.has(value) ? value : 'new';
-}
-
-function isSafeUrl(value) {
-  try {
-    const url = new URL(value, window.location.href);
-    if (url.protocol === 'https:') return true;
-    return url.protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname);
-  } catch {
-    return false;
-  }
-}
-
-function makeText(tag, className, text) {
+function textEl(tag, className, text) {
   const el = document.createElement(tag);
   if (className) el.className = className;
   el.textContent = text;
   return el;
 }
 
-function buildCard(item) {
-  if (!item || typeof item !== 'object' || !isSafeUrl(item.url)) return null;
-
-  const title = typeof item.title === 'string' && item.title.trim() ? item.title.trim() : 'App';
-  const description = typeof item.description === 'string' ? item.description.trim() : '';
-  const openMode = getOpenMode(item.open);
-
-  const card = document.createElement('a');
-  card.className = `app-card card-${getTheme(item.theme)}`;
-  card.href = new URL(item.url, window.location.href).href;
-
-  if (openMode === 'new') {
-    card.target = '_blank';
-    card.rel = 'noopener noreferrer';
-  }
-
-  const icon = document.createElement('div');
-  icon.className = 'card-icon';
-  icon.setAttribute('aria-hidden', 'true');
-  icon.innerHTML = getIcon(item.icon);
-
-  const content = document.createElement('div');
-  content.className = 'card-content';
-  content.append(
-    makeText('strong', 'card-title', title),
-    makeText('span', 'card-desc', description)
-  );
-
-  const arrow = makeText('span', 'card-arrow', '›');
-  arrow.setAttribute('aria-hidden', 'true');
-
-  card.append(icon, content, arrow);
-  card.setAttribute('aria-label', `${title}. ${description}${openMode === 'new' ? ' Opens in a new tab.' : ''}`);
-  return card;
+function safeHex(value, fallback) {
+  return typeof value === 'string' && /^#[0-9a-f]{6}$/i.test(value) ? value : fallback;
 }
 
-async function loadLinks() {
-  const container = document.getElementById('links-container');
-  if (!container) return;
+function formatDate(value) {
+  if (!value) return '';
+  const d = new Date(value + 'T12:00:00');
+  if (Number.isNaN(d.getTime())) return value;
+  return new Intl.DateTimeFormat('en-US',{month:'short',day:'numeric',year:'numeric'}).format(d);
+}
+
+function getStatus(value) {
+  return VALID_STATUS.has(value) ? value : 'live';
+}
+
+function statusLabel(value) {
+  return {
+    'live':'LIVE',
+    'beta':'BETA',
+    'coming-soon':'COMING SOON',
+    'maintenance':'MAINTENANCE'
+  }[getStatus(value)];
+}
+
+function isSafeUrl(value) {
+  if (!value) return false;
+  try {
+    const url = new URL(value, window.location.href);
+    if (url.protocol === 'https:') return true;
+    return url.protocol === 'http:' && ['localhost','127.0.0.1','[::1]'].includes(url.hostname);
+  } catch {
+    return false;
+  }
+}
+
+function safeAssetUrl(value, fallback) {
+  try {
+    const url = new URL(value || fallback, window.location.href);
+    return url.origin === window.location.origin ? url.href : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function getHubUrl() {
+  return isSafeUrl(hubConfig.hubUrl)
+    ? new URL(hubConfig.hubUrl, window.location.href).href
+    : DEFAULT_HUB_URL;
+}
+
+async function fetchJson(path, fallback) {
+  try {
+    const response = await fetch(path + '?v=' + Date.now(), {cache:'no-store'});
+    if (!response.ok) throw new Error('HTTP ' + response.status);
+    return await response.json();
+  } catch (error) {
+    console.warn('Unable to load ' + path, error);
+    return fallback;
+  }
+}
+
+async function loadConfig() {
+  const data = await fetchJson('config.json', hubConfig);
+  if (data && typeof data === 'object' && !Array.isArray(data)) {
+    hubConfig = Object.assign({}, hubConfig, data);
+  }
+  document.documentElement.style.setProperty('--hub-accent', safeHex(hubConfig.accent,'#42d7ff'));
+  document.documentElement.style.setProperty('--hub-accent-2', safeHex(hubConfig.accentSecondary,'#2dd4bf'));
+}
+
+async function setupServiceWorker() {
+  if (!('serviceWorker' in navigator)) return;
+
+  const hadController = Boolean(navigator.serviceWorker.controller);
+  let refreshing = false;
+
+  navigator.serviceWorker.addEventListener('controllerchange', function() {
+    if (!hadController || refreshing) return;
+    refreshing = true;
+    window.location.reload();
+  });
 
   try {
-    const response = await fetch(`links.json?v=${Date.now()}`, { cache: 'no-store' });
-    if (!response.ok) throw new Error(`Unable to load links (${response.status})`);
+    const registration = await navigator.serviceWorker.register('./sw.js', {updateViaCache:'none'});
 
-    const links = await response.json();
-    if (!Array.isArray(links)) throw new Error('Invalid links.json format');
-
-    const fragment = document.createDocumentFragment();
-    let rendered = 0;
-
-    for (const item of links) {
-      const card = buildCard(item);
-      if (!card) continue;
-      fragment.appendChild(card);
-      rendered += 1;
+    if (registration.waiting) {
+      registration.waiting.postMessage({type:'SKIP_WAITING'});
     }
 
-    if (!rendered) {
-      container.replaceChildren(makeText('p', 'empty-state', 'No applications published yet.'));
-      return;
-    }
+    registration.addEventListener('updatefound', function() {
+      const worker = registration.installing;
+      if (!worker) return;
 
-    container.replaceChildren(fragment);
+      worker.addEventListener('statechange', function() {
+        if (worker.state === 'installed' && navigator.serviceWorker.controller) {
+          worker.postMessage({type:'SKIP_WAITING'});
+        }
+      });
+    });
+
+    registration.update().catch(function(){});
   } catch (error) {
-    console.error('Data error:', error);
-    container.replaceChildren(makeText('p', 'empty-state', 'Applications will be available shortly.'));
+    console.error('Service Worker registration failed:', error);
   }
 }
 
@@ -158,66 +140,146 @@ function isStandalone() {
     window.navigator.standalone === true;
 }
 
-function showInstallHelp() {
-  document.querySelector('.install-help')?.remove();
+function getFocusable(root) {
+  return Array.from(root.querySelectorAll(
+    'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'
+  )).filter(function(el) {
+    return !el.hidden && el.getAttribute('aria-hidden') !== 'true';
+  });
+}
 
+function closeModal(restoreFocus = true) {
+  if (!activeModal) return;
+
+  activeModal.remove();
+  activeModal = null;
+
+  if (modalKeyHandler) {
+    document.removeEventListener('keydown', modalKeyHandler);
+    modalKeyHandler = null;
+  }
+
+  document.body.classList.remove('modal-open');
+  const main = document.querySelector('.hub-shell');
+  if (main) main.inert = false;
+
+  const returnTarget = modalReturnFocus;
+  modalReturnFocus = null;
+  if (restoreFocus && returnTarget?.isConnected) {
+    returnTarget.focus();
+  }
+}
+
+function openModal(title) {
+  const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  closeModal(false);
+  modalReturnFocus = opener;
+
+  const overlay = document.createElement('div');
+  overlay.className = 'hub-modal';
+  overlay.setAttribute('role','dialog');
+  overlay.setAttribute('aria-modal','true');
+  overlay.setAttribute('aria-labelledby','hub-modal-title');
+
+  const panel = document.createElement('div');
+  panel.className = 'modal-panel';
+
+  const head = document.createElement('div');
+  head.className = 'modal-head';
+
+  const titleNode = textEl('strong','modal-title',title);
+  titleNode.id = 'hub-modal-title';
+  head.append(titleNode);
+
+  const close = textEl('button','modal-close','×');
+  close.type = 'button';
+  close.setAttribute('aria-label','Close');
+  close.addEventListener('click', function(){ closeModal(true); });
+  head.append(close);
+
+  panel.append(head);
+  overlay.append(panel);
+
+  overlay.addEventListener('click', function(event) {
+    if (event.target === overlay) closeModal(true);
+  });
+
+  document.body.append(overlay);
+  activeModal = overlay;
+  document.body.classList.add('modal-open');
+
+  const main = document.querySelector('.hub-shell');
+  if (main) main.inert = true;
+
+  modalKeyHandler = function(event) {
+    if (!activeModal) return;
+
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      closeModal(true);
+      return;
+    }
+
+    if (event.key !== 'Tab') return;
+
+    const focusable = getFocusable(panel);
+    if (!focusable.length) {
+      event.preventDefault();
+      close.focus();
+      return;
+    }
+
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  };
+
+  document.addEventListener('keydown', modalKeyHandler);
+  requestAnimationFrame(function(){ close.focus(); });
+  return panel;
+}
+
+function showInstallHelp() {
+  const panel = openModal('Install PWA Hub');
   const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) ||
     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
-  const overlay = document.createElement('div');
-  overlay.className = 'install-help';
-  overlay.setAttribute('role', 'dialog');
-  overlay.setAttribute('aria-modal', 'true');
-  overlay.setAttribute('aria-label', 'Install PWA Hub');
-
-  const panel = document.createElement('div');
-  panel.className = 'install-help-panel';
-
-  const title = makeText('strong', 'install-help-title', 'Install PWA Hub');
-  const message = makeText(
+  panel.append(textEl(
     'p',
-    'install-help-text',
+    'modal-text',
     isIOS
-      ? 'Tap the Share button in Safari, choose “Add to Home Screen”, then tap “Add”.'
+      ? 'In Safari, tap Share, choose “Add to Home Screen”, then tap “Add”.'
       : 'Open your browser menu and choose “Install app” or “Add to Home screen”.'
-  );
-
-  const close = makeText('button', 'install-help-close', 'Got it');
-  close.type = 'button';
-  close.addEventListener('click', () => overlay.remove());
-
-  panel.append(title, message, close);
-  overlay.append(panel);
-  overlay.addEventListener('click', (event) => {
-    if (event.target === overlay) overlay.remove();
-  });
-
-  document.body.appendChild(overlay);
-  close.focus();
+  ));
 }
 
-function setupInstallButton() {
+function setupInstall() {
   const button = document.getElementById('install-button');
   if (!button) return;
 
   if (isStandalone()) {
     button.hidden = true;
-    return;
   }
 
-  button.hidden = false;
-
-  window.addEventListener('beforeinstallprompt', (event) => {
+  window.addEventListener('beforeinstallprompt', function(event) {
     event.preventDefault();
     deferredInstallPrompt = event;
+    if (!isStandalone()) button.hidden = false;
   });
 
-  window.addEventListener('appinstalled', () => {
+  window.addEventListener('appinstalled', function() {
     deferredInstallPrompt = null;
     button.hidden = true;
   });
 
-  button.addEventListener('click', async () => {
+  button.addEventListener('click', async function() {
     if (isStandalone()) {
       button.hidden = true;
       return;
@@ -243,44 +305,425 @@ function setupInstallButton() {
 function flashButton(button, message, normal) {
   const label = button?.querySelector('span:last-child');
   if (!label) return;
+
   label.textContent = message;
-  window.setTimeout(() => { label.textContent = normal; }, 1500);
+  window.setTimeout(function(){
+    label.textContent = normal;
+  }, 1400);
 }
 
-function setupActions() {
+async function copyText(value) {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(value);
+    return true;
+  }
+
+  const textarea = document.createElement('textarea');
+  textarea.value = value;
+  textarea.setAttribute('readonly','');
+  textarea.style.position = 'fixed';
+  textarea.style.opacity = '0';
+  document.body.append(textarea);
+  textarea.select();
+
+  let copied = false;
+  try {
+    copied = document.execCommand('copy');
+  } finally {
+    textarea.remove();
+  }
+  return copied;
+}
+
+async function copyHubUrl(button, normalLabel) {
+  try {
+    const copied = await copyText(getHubUrl());
+    if (!copied) throw new Error('Copy command was not accepted');
+    flashButton(button,'Copied',normalLabel);
+  } catch (error) {
+    console.warn('Clipboard failed:', error);
+    flashButton(button,'Unavailable',normalLabel);
+  }
+}
+
+function openShareModal() {
+  const panel = openModal('Share PWA Hub');
+
+  const qr = document.createElement('div');
+  qr.className = 'qr-wrap';
+
+  const img = document.createElement('img');
+  img.src = safeAssetUrl(hubConfig.qrImage,'qr-hub.svg');
+  img.alt = 'QR code for PWA Hub';
+  qr.append(img);
+
+  const note = textEl(
+    'p',
+    'modal-text',
+    'Scan this code to open the Hub, or use one of the options below.'
+  );
+  note.style.textAlign = 'center';
+
+  const actions = document.createElement('div');
+  actions.className = 'modal-actions';
+
+  if (navigator.share) {
+    const share = textEl('button','modal-action primary','Share');
+    share.type = 'button';
+    share.addEventListener('click', async function() {
+      try {
+        await navigator.share({
+          title:'@rmacfie • PWA Hub',
+          text:'My Progressive Web Apps • Ready to Use',
+          url:getHubUrl()
+        });
+      } catch (error) {
+        if (error?.name !== 'AbortError') console.warn(error);
+      }
+    });
+    actions.append(share);
+  }
+
+  const copy = textEl('button','modal-action','Copy Link');
+  copy.type = 'button';
+  copy.addEventListener('click', async function() {
+    await copyHubUrl(copy,'Copy Link');
+  });
+  actions.append(copy);
+
+  panel.append(qr,note,actions);
+}
+
+function setupTopActions() {
   const share = document.getElementById('share-button');
   const copy = document.getElementById('copy-button');
+  const qr = document.getElementById('qr-button');
 
-  share?.addEventListener('click', async () => {
+  share?.addEventListener('click', async function() {
+    if (!navigator.share) {
+      openShareModal();
+      return;
+    }
+
     try {
-      if (navigator.share) {
-        await navigator.share({
-          title: '@rmacfie • PWA Hub',
-          text: 'My Progressive Web Apps • Ready to Use',
-          url: HUB_URL
-        });
-      } else {
-        await navigator.clipboard.writeText(HUB_URL);
-        flashButton(share, 'Copied', 'Share');
-      }
+      await navigator.share({
+        title:'@rmacfie • PWA Hub',
+        text:'My Progressive Web Apps • Ready to Use',
+        url:getHubUrl()
+      });
     } catch (error) {
-      console.warn('Share action failed:', error);
+      if (error?.name !== 'AbortError') openShareModal();
     }
   });
 
-  copy?.addEventListener('click', async () => {
-    try {
-      await navigator.clipboard.writeText(HUB_URL);
-      flashButton(copy, 'Copied', 'Copy');
-    } catch (error) {
-      console.warn('Copy action failed:', error);
-    }
+  copy?.addEventListener('click', function(){
+    copyHubUrl(copy,'Copy');
+  });
+
+  qr?.addEventListener('click', openShareModal);
+}
+
+function renderMeta(item) {
+  const meta = document.createElement('div');
+  meta.className = 'v13-meta';
+
+  if (hubConfig.showStatus !== false) {
+    const status = getStatus(item.status);
+    const badge = textEl('span','status-badge status-' + status,statusLabel(status));
+    meta.append(badge);
+  }
+
+  if (hubConfig.showVersion !== false && item.version) {
+    if (meta.childNodes.length) meta.append(textEl('span','meta-dot','•'));
+    meta.append(textEl('span','', 'v' + item.version));
+  }
+
+  if (hubConfig.showUpdated !== false && item.updated) {
+    if (meta.childNodes.length) meta.append(textEl('span','meta-dot','•'));
+    meta.append(textEl('span','',formatDate(item.updated)));
+  }
+
+  return meta;
+}
+
+function setImageFallback(image) {
+  image.addEventListener('error', function() {
+    image.src = 'icon-192.png';
+  }, {once:true});
+}
+
+function openAppDetails(item) {
+  const panel = openModal(item.title || 'App');
+
+  const head = document.createElement('div');
+  head.className = 'detail-head';
+
+  const logo = document.createElement('img');
+  logo.className = 'detail-logo';
+  logo.src = safeAssetUrl(item.logo,'icon-192.png');
+  logo.alt = '';
+  setImageFallback(logo);
+
+  const copy = document.createElement('div');
+  copy.append(
+    textEl('div','detail-title',item.title || 'App'),
+    textEl('div','detail-sub',(item.category || 'App') + ' • ' + statusLabel(item.status))
+  );
+
+  head.append(logo,copy);
+
+  const desc = textEl('p','modal-text',item.details || item.description || '');
+
+  const meta = document.createElement('div');
+  meta.className = 'modal-meta';
+
+  const version = document.createElement('div');
+  version.append(
+    textEl('span','', 'Version'),
+    textEl('strong','',item.version ? 'v' + item.version : '—')
+  );
+
+  const updated = document.createElement('div');
+  updated.append(
+    textEl('span','', 'Last updated'),
+    textEl('strong','',item.updated ? formatDate(item.updated) : '—')
+  );
+
+  meta.append(version,updated);
+  panel.append(head,desc,meta);
+
+  if (isSafeUrl(item.url) && getStatus(item.status) !== 'coming-soon') {
+    const actions = document.createElement('div');
+    actions.className = 'modal-actions';
+
+    const launch = textEl('a','modal-action primary','Launch App');
+    launch.href = new URL(item.url, window.location.href).href;
+    launch.target = item.open === 'same' ? '_self' : '_blank';
+    if (launch.target === '_blank') launch.rel = 'noopener noreferrer';
+
+    actions.append(launch);
+    panel.append(actions);
+  }
+}
+
+function buildCard(item) {
+  const status = getStatus(item.status);
+  const canLaunch = isSafeUrl(item.url) && status !== 'coming-soon';
+
+  const article = document.createElement('article');
+  article.className = 'v13-card card-' + (VALID_THEMES.has(item.theme) ? item.theme : 'blue');
+
+  if (status === 'maintenance') article.classList.add('is-maintenance');
+  if (status === 'coming-soon') article.classList.add('is-coming-soon');
+  if (item.featured) article.classList.add('is-featured');
+
+  const main = document.createElement(canLaunch ? 'a' : 'div');
+  main.className = 'v13-launch' + (canLaunch ? '' : ' is-disabled');
+
+  if (canLaunch) {
+    main.href = new URL(item.url, window.location.href).href;
+    main.target = item.open === 'same' ? '_self' : '_blank';
+    if (main.target === '_blank') main.rel = 'noopener noreferrer';
+  } else {
+    main.setAttribute('aria-disabled','true');
+  }
+
+  const logo = document.createElement('img');
+  logo.className = 'v13-logo';
+  logo.src = safeAssetUrl(item.logo,'icon-192.png');
+  logo.alt = '';
+  setImageFallback(logo);
+
+  const content = document.createElement('div');
+  content.className = 'v13-copy';
+
+  const titleRow = document.createElement('div');
+  titleRow.className = 'v13-title-row';
+  titleRow.append(textEl('strong','v13-title',item.title || 'App'));
+
+  if (item.featured) {
+    titleRow.append(textEl('span','featured-badge',item.featuredLabel || 'FEATURED'));
+  }
+
+  content.append(
+    titleRow,
+    textEl('span','v13-desc',item.description || ''),
+    renderMeta(item)
+  );
+
+  const arrow = textEl('span','v13-arrow',canLaunch ? '›' : '•');
+  arrow.setAttribute('aria-hidden','true');
+
+  main.append(logo,content,arrow);
+
+  const info = textEl('button','info-btn','i');
+  info.type = 'button';
+  info.setAttribute('aria-label','Details for ' + (item.title || 'app'));
+  info.addEventListener('click', function(){
+    openAppDetails(item);
+  });
+
+  article.append(main,info);
+  return article;
+}
+
+async function loadApps() {
+  const container = document.getElementById('links-container');
+  if (!container) return;
+
+  const data = await fetchJson('links.json',[]);
+  const items = Array.isArray(data)
+    ? data
+      .filter(function(item){
+        return item && typeof item.title === 'string';
+      })
+      .sort(function(a,b){
+        return (Number(a.order)||999) - (Number(b.order)||999);
+      })
+    : [];
+
+  if (!items.length) {
+    container.replaceChildren(
+      textEl('p','empty-state','Applications will be available shortly.')
+    );
+    return;
+  }
+
+  const fragment = document.createDocumentFragment();
+  items.forEach(function(item){
+    fragment.append(buildCard(item));
+  });
+  container.replaceChildren(fragment);
+}
+
+function updateOfflineState() {
+  const note = document.getElementById('offline-note');
+  if (note) note.hidden = navigator.onLine;
+}
+
+function recordPrivateVisit() {
+  if (!hubConfig.localPrivateVisits) return;
+
+  try {
+    const sessionKey = 'pwaHubV13Counted';
+    if (sessionStorage.getItem(sessionKey)) return;
+
+    const key = 'pwaHubPrivateVisits';
+    const next = (Number(localStorage.getItem(key)) || 0) + 1;
+    localStorage.setItem(key,String(next));
+    sessionStorage.setItem(sessionKey,'1');
+  } catch {}
+}
+
+function getPrivateVisits() {
+  try {
+    return Number(localStorage.getItem('pwaHubPrivateVisits')) || 0;
+  } catch {
+    return 0;
+  }
+}
+
+async function maybeRecordExternalVisit() {
+  const endpoint = hubConfig.analyticsEndpoint;
+  if (!endpoint || !isSafeUrl(endpoint)) return;
+
+  try {
+    const url = new URL(endpoint, window.location.href);
+    if (url.origin !== window.location.origin) return;
+
+    await fetch(url.href,{
+      method:'POST',
+      headers:{'content-type':'application/json'},
+      body:JSON.stringify({event:'hub_view',path:location.pathname}),
+      keepalive:true
+    });
+  } catch {}
+}
+
+async function loadChangelog() {
+  const data = await fetchJson('changelog.json',[]);
+  changelogData = Array.isArray(data) ? data : [];
+}
+
+function openChangelog() {
+  const panel = openModal('Changelog');
+
+  if (!changelogData.length) {
+    panel.append(textEl('p','modal-text','No changelog entries are available.'));
+    return;
+  }
+
+  changelogData.forEach(function(entry) {
+    const block = document.createElement('section');
+    block.className = 'change-entry';
+    block.append(
+      textEl('div','change-title','v' + entry.version + ' • ' + entry.title),
+      textEl('div','change-date',formatDate(entry.date))
+    );
+
+    const list = document.createElement('ul');
+    list.className = 'change-list';
+    (entry.changes || []).forEach(function(change){
+      list.append(textEl('li','',change));
+    });
+
+    block.append(list);
+    panel.append(block);
   });
 }
 
+function openAbout() {
+  const panel = openModal('About PWA Hub');
+  panel.append(
+    textEl(
+      'p',
+      'modal-text',
+      'A compact personal launcher for Roberto S. Macfie’s Progressive Web Apps and digital projects.'
+    )
+  );
+
+  const counter = document.createElement('div');
+  counter.className = 'local-counter';
+  counter.append(
+    textEl('strong','',String(getPrivateVisits())),
+    textEl('span','','Private visits on this device')
+  );
+
+  panel.append(counter);
+  panel.append(
+    textEl(
+      'p',
+      'modal-text',
+      'The visit counter above stays in this browser only. No external analytics are sent unless a same-origin analytics endpoint is explicitly configured.'
+    )
+  );
+}
+
+function setupFooter() {
+  document.getElementById('changelog-button')?.addEventListener('click',openChangelog);
+  document.getElementById('about-button')?.addEventListener('click',openAbout);
+}
+
+async function initData() {
+  await loadConfig();
+  recordPrivateVisit();
+  maybeRecordExternalVisit();
+  await Promise.all([loadApps(),loadChangelog()]);
+}
+
+const avatar = document.querySelector('.avatar');
+avatar?.addEventListener('error', function() {
+  avatar.src = 'https://ui-avatars.com/api/?name=Roberto+Macfie&background=108a9d&color=fff&size=192';
+}, {once:true});
+
+window.addEventListener('online',updateOfflineState);
+window.addEventListener('offline',updateOfflineState);
+
 setupServiceWorker();
-setupInstallButton();
-setupActions();
-loadLinks();
+setupInstall();
+setupTopActions();
+setupFooter();
+updateOfflineState();
+initData();
 
 window.__PWA_HUB_VERSION__ = HUB_VERSION;

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https://ui-avatars.com; manifest-src 'self'; base-uri 'self'; form-action 'self';">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https://ui-avatars.com; connect-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self';">
   <title>@rmacfie • PWA Hub</title>
   <meta name="description" content="Roberto S. Macfie's personal hub for Progressive Web Apps and digital tools.">
   <meta name="color-scheme" content="dark">
@@ -16,7 +16,6 @@
   <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
   <link rel="canonical" href="https://kl4ne.github.io/pwa-hub/">
   <link rel="stylesheet" href="style.css">
-  <link rel="stylesheet" href="v13.css">
 
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -60,7 +59,7 @@
           <span aria-hidden="true">▦</span><span>QR</span>
         </button>
       </div>
-      <p class="offline-note" id="offline-note" hidden>Offline mode • cached apps available</p>
+      <p class="offline-note" id="offline-note" aria-live="polite" hidden>Offline mode • cached apps available</p>
     </header>
 
     <section class="apps-section" aria-label="My Progressive Web Apps">
@@ -69,7 +68,7 @@
 
     <footer class="hub-footer">
       <div class="footer-tools" aria-label="Hub information">
-        <span>v1.3.0</span>
+        <span>v1.3.1</span>
         <button type="button" id="changelog-button">Changelog</button>
         <button type="button" id="about-button">About</button>
       </div>
@@ -77,6 +76,6 @@
     </footer>
   </main>
 
-  <script src="app-v13.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
