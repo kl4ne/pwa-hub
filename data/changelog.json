@@ -1,5 +1,16 @@
 [
   {
+    "version": "1.4.1",
+    "date": "2026-09-27",
+    "title": "MPDGI Hub Integration",
+    "changes": [
+      "Added MPDGI Hub as the third launcher app using the official https://hub.mpdgi.org/ custom domain.",
+      "Added the MPDGI Hub icon as a local launcher asset and included it in Service Worker precaching.",
+      "Corrected the QR modal fallback path to assets/qr/qr-hub.svg after the v1.4.0 repository reorganization.",
+      "Synchronized the Hub application, footer, configuration, cache generation, changelog, and documentation to v1.4.1."
+    ]
+  },
+  {
     "version": "1.4.0",
     "date": "2026-09-26",
     "title": "Structured Repository",
