@@ -1,6 +1,10 @@
-# @rmacfie • PWA Hub — v1.4.0
+# @rmacfie • PWA Hub — v1.4.1
 
 A lightweight, installable Progressive Web App that serves as Roberto S. Macfie's personal launcher for PWAs and digital projects. It is designed for GitHub Pages and intentionally uses no framework, build system, database, or third-party JavaScript.
+
+## v1.4.1 — MPDGI Hub Integration
+
+Version 1.4.1 adds **MPDGI Hub** as the third launcher app at `https://hub.mpdgi.org/`, reuses its official icon as a local asset, updates Service Worker precaching, and corrects the QR fallback path introduced by the v1.4.0 folder reorganization. The approved compact visual design remains unchanged.
 
 ## v1.4.0 — Structured Repository
 
@@ -42,7 +46,8 @@ pwa-hub/
 │   │   └── icon-512.svg
 │   ├── logos/
 │   │   ├── glp1-icon.png
-│   │   └── ai-council-icon.png
+│   │   ├── ai-council-icon.png
+│   │   └── mpdgi-hub-icon.svg
 │   └── qr/
 │       └── qr-hub.svg
 └── .github/
@@ -73,7 +78,7 @@ Add an object to `data/links.json` with a unique numeric `order`:
 
 ```json
 {
-  "order": 3,
+  "order": 4,
   "title": "My New PWA",
   "description": "Short description",
   "details": "Longer optional description.",
@@ -84,7 +89,7 @@ Add an object to `data/links.json` with a unique numeric `order`:
   "status": "live",
   "category": "Utility",
   "version": "1.0.0",
-  "updated": "2026-09-26",
+  "updated": "2026-09-27",
   "featured": false
 }
 ```
