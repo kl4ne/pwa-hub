@@ -1,4 +1,4 @@
-const HUB_VERSION = '1.4.0';
+const HUB_VERSION = '1.4.1';
 const DEFAULT_HUB_URL = 'https://kl4ne.github.io/pwa-hub/';
 const VALID_THEMES = new Set(['blue','green','orange','pink']);
 const VALID_STATUS = new Set(['live','beta','coming-soon','maintenance']);
@@ -353,7 +353,7 @@ function openShareModal() {
   qr.className = 'qr-wrap';
 
   const img = document.createElement('img');
-  img.src = safeAssetUrl(hubConfig.qrImage,'qr-hub.svg');
+  img.src = safeAssetUrl(hubConfig.qrImage,'assets/qr/qr-hub.svg');
   img.alt = 'QR code for PWA Hub';
   qr.append(img);
 

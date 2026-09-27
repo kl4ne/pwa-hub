@@ -1,4 +1,4 @@
-const VERSION = '1.4.0';
+const VERSION = '1.4.1';
 const CACHE_PREFIX = 'rmacfie-pwa-hub';
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${VERSION}`;
@@ -21,7 +21,8 @@ const OPTIONAL_ASSETS = [
   './assets/icons/icon-192.png',
   './assets/icons/icon-512.svg',
   './assets/logos/glp1-icon.png',
-  './assets/logos/ai-council-icon.png'
+  './assets/logos/ai-council-icon.png',
+  './assets/logos/mpdgi-hub-icon.svg'
 ];
 
 self.addEventListener('install', (event) => {

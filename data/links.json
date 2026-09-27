@@ -28,5 +28,20 @@
     "version": "1.6.8",
     "updated": "2026-09-26",
     "featured": false
+  },
+  {
+    "order": 3,
+    "title": "MPDGI Hub",
+    "description": "Official digital hub for Ministerio Plenitud de Gracia.",
+    "details": "An NFC-ready bilingual church hub for member services, giving, prayer, Bible access, ministries, social media, and the church website.",
+    "url": "https://hub.mpdgi.org/",
+    "theme": "orange",
+    "logo": "assets/logos/mpdgi-hub-icon.svg",
+    "open": "new",
+    "status": "live",
+    "category": "Church",
+    "version": "1.4.1",
+    "updated": "2026-09-26",
+    "featured": false
   }
 ]
